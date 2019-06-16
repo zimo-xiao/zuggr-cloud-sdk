@@ -36,16 +36,6 @@ class ZuggrCloud
     /**
      * @var string
      */
-    protected $adminAuthURI;
-
-    /**
-     * @var string
-     */
-    protected $passportAuthURI;
-
-    /**
-     * @var string
-     */
     protected $mockDataURI;
 
     /**
@@ -85,13 +75,7 @@ class ZuggrCloud
         if (isset($config['app_auth_uri'])) {
             $this->appAuthURI = $config['app_auth_uri'];
         } else {
-            $this->appAuthURI = '/app/login';
-        }
-
-        if (isset($config['admin_auth_uri'])) {
-            $this->adminAuthURI = $config['admin_auth_uri'];
-        } else {
-            $this->adminAuthURI = '/admin/login';
+            $this->appAuthURI = '/app/oauth/login';
         }
 
         if (isset($config['mock_data_uri'])) {
@@ -133,16 +117,12 @@ class ZuggrCloud
 
         if ($authType) {
             $token = $this->getTokenByAuth($authType, $authID);
-            $headers = array_merge($authType, ['Authorization' => 'Bearer '.$token]);
-        }
-
-        if ($authType) {
-            $headers = array_merge($authType, ['Authorization' => 'Bearer '.$this->getTokenByAuth($authType, $authID)]);
+            $headers = array_merge($headers, ['Authorization' => 'Bearer '.$token]);
         }
 
         $out = $this->request('GET', $uri, $data, $headers);
 
-        if (isset($out['access_token']) && isset($out['expires_in'])) {
+        if (isset($out['access_token']) && isset($out['expires_in']) && $authType) {
             if ($token != $out['access_token']) {
                 $this->storeAuthCache($authType, $authID, $out['access_token'], $out['expires_in']);
             }
@@ -169,29 +149,12 @@ class ZuggrCloud
 
         if ($authType) {
             $token = $this->getTokenByAuth($authType, $authID);
-            $headers = array_merge($authType, ['Authorization' => 'Bearer '.$token]);
+            $headers = array_merge($headers, ['Authorization' => 'Bearer '.$token]);
         }
 
         $out = $this->request('POST', $uri, $data, $headers);
 
-        $authType = null;
-        switch (Helpers::parseURI($uri)) {
-            case Helpers::parseURI($this->adminAuthURI):
-                $authType = 'admin';
-                break;
-            case Helpers::parseURI($this->passportAuthURI):
-                $authType = 'admin';
-                break;
-        }
-
-        if ($authType) {
-            if (!isset($out['id']) && !isset($out['access_token']) && !isset($out['expires_in'])) {
-                throw new ZuggrCloudException('failed to fetch '.$authType.' token from Zuggr Cloud');
-            }
-            $this->storeAuthCache($authType, $out['id'], $out['access_token'], $out['expires_in']);
-        }
-
-        if (isset($out['access_token']) && isset($out['expires_in'])) {
+        if (isset($out['access_token']) && isset($out['expires_in']) && $authType) {
             if ($token != $out['access_token']) {
                 $this->storeAuthCache($authType, $authID, $out['access_token'], $out['expires_in']);
             }
@@ -218,12 +181,12 @@ class ZuggrCloud
 
         if ($authType) {
             $token = $this->getTokenByAuth($authType, $authID);
-            $headers = array_merge($authType, ['Authorization' => 'Bearer '.$token]);
+            $headers = array_merge($headers, ['Authorization' => 'Bearer '.$token]);
         }
 
         $out = $this->request('PUT', $uri, $data, $headers);
 
-        if (isset($out['access_token']) && isset($out['expires_in'])) {
+        if (isset($out['access_token']) && isset($out['expires_in']) && $authType) {
             if ($token != $out['access_token']) {
                 $this->storeAuthCache($authType, $authID, $out['access_token'], $out['expires_in']);
             }
@@ -250,22 +213,44 @@ class ZuggrCloud
 
         if ($authType) {
             $token = $this->getTokenByAuth($authType, $authID);
-            $headers = array_merge($authType, ['Authorization' => 'Bearer '.$token]);
-        }
-
-        if ($authType) {
-            $headers = array_merge($authType, ['Authorization' => 'Bearer '.$this->getTokenByAuth($authType, $authID)]);
+            $headers = array_merge($headers, ['Authorization' => 'Bearer '.$token]);
         }
 
         $out = $this->request('DELETE', $uri, $data, $headers);
 
-        if (isset($out['access_token']) && isset($out['expires_in'])) {
+        if (isset($out['access_token']) && isset($out['expires_in']) && $authType) {
             if ($token != $out['access_token']) {
                 $this->storeAuthCache($authType, $authID, $out['access_token'], $out['expires_in']);
             }
         }
 
         return $out;
+    }
+
+
+    /**
+     * Register token into cache
+     *
+     * @param string $authType
+     * @param array $oauth
+     * @param array $info
+     * @return void
+     */
+    public function registerTokenIntoCache(string $authType, array $oauth, array $info): void
+    {
+        if ($authType != 'user' && $authType != 'admin') {
+            throw new ZuggrCloudException('could not register auth type '. $authType . ' into cache');
+        }
+
+        if (!isset($info['id'])) {
+            throw new ZuggrCloudException('info missing critical information');
+        }
+
+        if (!isset($oauth['access_token']) || !isset($oauth['expires_in'])) {
+            throw new ZuggrCloudException('oAuth missing critical information');
+        }
+
+        $this->storeAuthCache($authType, $info['id'], $oauth['access_token'], $oauth['expires_in']);
     }
 
     /** helper functions **/
@@ -335,7 +320,7 @@ class ZuggrCloud
         $key = md5(__CLASS__ . ':auth:admin:'.$adminID);
 
         if (!$out = $this->cache->get($key)) {
-            throw new ZuggrCloudException('could not find cached token for admin ID '.$adminID. '. To refresh cache, please request URI "'.$this->adminAuthURI.'"');
+            throw new ZuggrCloudException('could not find cached token for admin ID '.$adminID);
         }
 
         return $out;
@@ -352,7 +337,7 @@ class ZuggrCloud
         $key = md5(__CLASS__ . ':auth:passport:'.$passportID);
 
         if (!$out = $this->cache->get($key)) {
-            throw new ZuggrCloudException('could not find cached token for passport ID '.$passportID. '. To refresh cache, please request URI "'.$this->adminAuthURI.'"');
+            throw new ZuggrCloudException('could not find cached token for passport ID '.$passportID);
         }
 
         return $out;
@@ -371,7 +356,7 @@ class ZuggrCloud
     {
         $key = md5(__CLASS__ . ':auth:'.$authType.':'.$authID);
 
-        $this->cache->set($key, $out['access_token'], $expiresIn - 60);
+        $this->cache->set($key, $token, $expiresIn - 60);
     }
 
     /**
@@ -432,13 +417,15 @@ class ZuggrCloud
         if (strtoupper($method) == 'GET') {
             $requestOptions['query'] = $data;
         } else {
-            $requestOptions['body'] = $data;
+            $requestOptions['form_params'] = $data;
         }
 
         $response = $this->client->request($method, $uri, array_merge($requestOptions, [
             'headers' => $headers
         ]));
 
-        return json_decode($response->getBody());
+        $out = json_decode($response->getBody(), true);
+        
+        return is_array($out) ? $out : [];
     }
 }
