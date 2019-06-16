@@ -435,7 +435,7 @@ class ZuggrCloud
             $requestOptions['body'] = $data;
         }
 
-        $response = $this->client->request($method, $this->url.$uri, array_merge($requestOptions, [
+        $response = $this->client->request($method, $uri, array_merge($requestOptions, [
             'headers' => $headers
         ]));
 
