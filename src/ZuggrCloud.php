@@ -53,6 +53,7 @@ class ZuggrCloud
      *
      * @param CacheInterface $cache
      * @param array $config
+     * @param bool $mock
      *
      * @throws ZuggrCloudException
      */
@@ -103,6 +104,8 @@ class ZuggrCloud
      * Makes GET request to Zuggr Cloud and returns the result
      *
      * @param string $uri
+     * @param string $authType
+     * @param string $authID
      * @param array $data
      * @param array $headers
      * @return array
@@ -135,6 +138,8 @@ class ZuggrCloud
      * Makes POST request to Zuggr Cloud and returns the result
      *
      * @param string $uri
+     * @param string $authType
+     * @param string $authID
      * @param array $data
      * @param array $headers
      * @return array
@@ -167,6 +172,8 @@ class ZuggrCloud
      * Makes PUT request to Zuggr Cloud and returns the result
      *
      * @param string $uri
+     * @param string $authType
+     * @param string $authID
      * @param array $data
      * @param array $headers
      * @return array
@@ -199,6 +206,8 @@ class ZuggrCloud
      * Makes DELETE request to Zuggr Cloud and returns the result
      *
      * @param string $uri
+     * @param string $authType
+     * @param string $authID
      * @param array $data
      * @param array $headers
      * @return array
