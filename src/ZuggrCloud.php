@@ -104,13 +104,12 @@ class ZuggrCloud
      * Makes GET request to Zuggr Cloud and returns the result
      *
      * @param string $uri
-     * @param string $authType
-     * @param string $authID
      * @param array $data
      * @param array $headers
+     * @param string $authType
      * @return array
      */
-    public function get(string $uri, string $authType = null, string $authID = null, array $data = [], array $headers = []): array
+    public function get(string $uri, array $data = [], array $headers = [], string $authType = null): array
     {
         if ($this->mock) {
             return $this->getMockData('GET', Helpers::parseURI($uri, false));
@@ -119,7 +118,7 @@ class ZuggrCloud
         $token = null;
 
         if ($authType) {
-            $token = $this->getTokenByAuth($authType, $authID);
+            $token = $this->getTokenByAuth($authType);
             $headers = array_merge($headers, ['Authorization' => 'Bearer '.$token]);
         }
 
@@ -127,7 +126,7 @@ class ZuggrCloud
 
         if (isset($out['access_token']) && isset($out['expires_in']) && $authType) {
             if ($token != $out['access_token']) {
-                $this->storeAuthCache($authType, $authID, $out['access_token'], $out['expires_in']);
+                $this->storeAuthCache($authType, $out['access_token'], $out['expires_in']);
             }
         }
 
@@ -138,13 +137,12 @@ class ZuggrCloud
      * Makes POST request to Zuggr Cloud and returns the result
      *
      * @param string $uri
-     * @param string $authType
-     * @param string $authID
      * @param array $data
      * @param array $headers
+     * @param string $authType
      * @return array
      */
-    public function post(string $uri, string $authType = null, string $authID = null, array $data = [], array $headers = []): array
+    public function post(string $uri, array $data = [], array $headers = [], string $authType = null): array
     {
         if ($this->mock) {
             return $this->getMockData('POST', Helpers::parseURI($uri, false));
@@ -153,7 +151,7 @@ class ZuggrCloud
         $token = null;
 
         if ($authType) {
-            $token = $this->getTokenByAuth($authType, $authID);
+            $token = $this->getTokenByAuth($authType);
             $headers = array_merge($headers, ['Authorization' => 'Bearer '.$token]);
         }
 
@@ -161,7 +159,7 @@ class ZuggrCloud
 
         if (isset($out['access_token']) && isset($out['expires_in']) && $authType) {
             if ($token != $out['access_token']) {
-                $this->storeAuthCache($authType, $authID, $out['access_token'], $out['expires_in']);
+                $this->storeAuthCache($authType, $out['access_token'], $out['expires_in']);
             }
         }
 
@@ -172,13 +170,12 @@ class ZuggrCloud
      * Makes PUT request to Zuggr Cloud and returns the result
      *
      * @param string $uri
-     * @param string $authType
-     * @param string $authID
      * @param array $data
      * @param array $headers
+     * @param string $authType
      * @return array
      */
-    public function put(string $uri, string $authType = null, string $authID = null, array $data = [], array $headers = []): array
+    public function put(string $uri, array $data = [], array $headers = [], string $authType = null): array
     {
         if ($this->mock) {
             return $this->getMockData('PUT', Helpers::parseURI($uri, false));
@@ -187,7 +184,7 @@ class ZuggrCloud
         $token = null;
 
         if ($authType) {
-            $token = $this->getTokenByAuth($authType, $authID);
+            $token = $this->getTokenByAuth($authType);
             $headers = array_merge($headers, ['Authorization' => 'Bearer '.$token]);
         }
 
@@ -195,7 +192,7 @@ class ZuggrCloud
 
         if (isset($out['access_token']) && isset($out['expires_in']) && $authType) {
             if ($token != $out['access_token']) {
-                $this->storeAuthCache($authType, $authID, $out['access_token'], $out['expires_in']);
+                $this->storeAuthCache($authType, $out['access_token'], $out['expires_in']);
             }
         }
 
@@ -206,13 +203,12 @@ class ZuggrCloud
      * Makes DELETE request to Zuggr Cloud and returns the result
      *
      * @param string $uri
-     * @param string $authType
-     * @param string $authID
      * @param array $data
      * @param array $headers
+     * @param string $authType
      * @return array
      */
-    public function delete(string $uri, string $authType = null, string $authID = null, array $data = [], array $headers = []): array
+    public function delete(string $uri, array $data = [], array $headers = [], string $authType = null): array
     {
         if ($this->mock) {
             return $this->getMockData('DELETE', Helpers::parseURI($uri, false));
@@ -221,7 +217,7 @@ class ZuggrCloud
         $token = null;
 
         if ($authType) {
-            $token = $this->getTokenByAuth($authType, $authID);
+            $token = $this->getTokenByAuth($authType);
             $headers = array_merge($headers, ['Authorization' => 'Bearer '.$token]);
         }
 
@@ -229,37 +225,11 @@ class ZuggrCloud
 
         if (isset($out['access_token']) && isset($out['expires_in']) && $authType) {
             if ($token != $out['access_token']) {
-                $this->storeAuthCache($authType, $authID, $out['access_token'], $out['expires_in']);
+                $this->storeAuthCache($authType, $out['access_token'], $out['expires_in']);
             }
         }
 
         return $out;
-    }
-
-
-    /**
-     * Register token into cache
-     *
-     * @param string $authType
-     * @param array $oauth
-     * @param array $info
-     * @return void
-     */
-    public function registerTokenIntoCache(string $authType, array $oauth, array $info): void
-    {
-        if ($authType != 'user' && $authType != 'admin') {
-            throw new ZuggrCloudException('could not register auth type '. $authType . ' into cache');
-        }
-
-        if (!isset($info['id'])) {
-            throw new ZuggrCloudException('info missing critical information');
-        }
-
-        if (!isset($oauth['access_token']) || !isset($oauth['expires_in'])) {
-            throw new ZuggrCloudException('oAuth missing critical information');
-        }
-
-        $this->storeAuthCache($authType, $info['id'], $oauth['access_token'], $oauth['expires_in']);
     }
 
     /** helper functions **/
@@ -271,19 +241,11 @@ class ZuggrCloud
      * @param string $bizID
      * @return string
      */
-    private function getTokenByAuth(string $type, string $bizID = null): string
+    private function getTokenByAuth(string $authType): string
     {
-        switch ($type) {
+        switch ($authType) {
             case 'app':
                 return $this->getAppToken();
-                break;
-
-            case 'admin':
-                return $this->getAdminToken($bizID);
-                break;
-
-            case 'passport':
-                return $this->getPassportToken($bizID);
                 break;
             
             default:
@@ -298,7 +260,7 @@ class ZuggrCloud
      */
     private function getAppToken(): string
     {
-        $key = md5(__CLASS__ . ':auth:app:');
+        $key = md5(__CLASS__ . ':auth:app');
 
         if (!$out = $this->cache->get($key)) {
             $out = $this->request('POST', $this->appAuthURI, [
@@ -319,40 +281,6 @@ class ZuggrCloud
     }
 
     /**
-     * Get admin token from cache if available
-     *
-     * @param string $adminID
-     * @return string
-     */
-    private function getAdminToken(string $adminID): string
-    {
-        $key = md5(__CLASS__ . ':auth:admin:'.$adminID);
-
-        if (!$out = $this->cache->get($key)) {
-            throw new ZuggrCloudException('could not find cached token for admin ID '.$adminID);
-        }
-
-        return $out;
-    }
-
-    /**
-     * Get passport token from cache if available
-     *
-     * @param string $adminID
-     * @return string
-     */
-    private function getPassportToken(string $passportID): string
-    {
-        $key = md5(__CLASS__ . ':auth:passport:'.$passportID);
-
-        if (!$out = $this->cache->get($key)) {
-            throw new ZuggrCloudException('could not find cached token for passport ID '.$passportID);
-        }
-
-        return $out;
-    }
-
-    /**
      * Store token in cache
      *
      * @param string $authType
@@ -361,9 +289,9 @@ class ZuggrCloud
      * @param integer $expiresIn
      * @return void
      */
-    private function storeAuthCache(string $authType, string $authID, string $token, int $expiresIn): void
+    private function storeAuthCache(string $authType, string $token, int $expiresIn): void
     {
-        $key = md5(__CLASS__ . ':auth:'.$authType.':'.$authID);
+        $key = md5(__CLASS__ . ':auth:'.$authType);
 
         $this->cache->set($key, $token, $expiresIn - 60);
     }

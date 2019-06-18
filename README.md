@@ -32,62 +32,27 @@ $config = [
  *
  * @throws ZuggrCloudException
  */
+
 $zuggr = new ZuggrCloud\ZuggrCloud($cache, $config, false);
 
-// app token auto-magically appears in request header when $authType = app
-
 /**
- * Makes GET request to Zuggr Cloud and returns the result
+ * Makes request to Zuggr Cloud and returns the result
  *
  * @param string $uri
- * @param string $authType
- * @param string $authID
  * @param array $data
  * @param array $headers
- * @return array
- */
-$zuggr->get('app/oauth/info', 'app');
-
-// for user & admin token, you need to register them by hand
-
-/**
- * Makes POST request to Zuggr Cloud and returns the result
- *
- * @param string $uri
  * @param string $authType
- * @param string $authID
- * @param array $data
- * @param array $headers
  * @return array
  */
-$adminOauth = $zuggr->post('admin/oauth/login', null, null, [
+
+$zuggr->get('app/oauth/info', [], [], 'app'); // app token auto-magically appears in request header when $authType = app
+
+$adminOauth = $zuggr->post('admin/oauth/login', [
     'username' => 'foo',
     'password' => 'bar'
 ]);
 
-$adminInfo = $zuggr->get('admin/oauth/info', null, null, [], [
-    'Authorization' => 'Bearer '.$oauth['access_token']
+$adminInfo = $zuggr->get('admin/oauth/info', [], [
+    'Authorization' => 'Bearer '.$adminOauth['access_token']
 ]);
-
-/**
- * Register token into cache
- *
- * @param string $authType
- * @param array $oauth
- * @param array $info
- * @return void
- */
-$zuggr->registerTokenIntoCache('admin', $adminOauth, $adminInfo);
-
-/**
- * Makes DELETE request to Zuggr Cloud and returns the result
- *
- * @param string $uri
- * @param string $authType
- * @param string $authID
- * @param array $data
- * @param array $headers
- * @return array
- */
-$zuggr->delete('admin/'.$adminInfo['id'], 'admin', $adminInfo['id']); 
 ```
