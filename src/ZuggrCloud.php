@@ -108,16 +108,16 @@ class ZuggrCloud
      * Makes GET request to Zuggr Cloud and returns the result
      *
      * @param string $uri
+     * @param bool $appAuth
      * @param array $data
      * @param array $headers
-     * @param string $authType
      * @return array
      */
     public function get(
         string $uri,
+        bool $appAuth = true,
         array $data = [],
         array $headers = [],
-        string $authType = null,
         bool $returnRequestOauth = false
     ): array {
         if ($this->mock) {
@@ -126,8 +126,8 @@ class ZuggrCloud
 
         $token = null;
 
-        if ($authType) {
-            $token = $this->getTokenByAuth($authType);
+        if ($appAuth) {
+            $token = $this->getTokenByAuth('app');
             $headers = array_merge($headers, ['Authorization' => 'Bearer '.$token]);
         }
 
@@ -135,9 +135,9 @@ class ZuggrCloud
 
         if (isset($out['request_oauth'])) {
             $oauth = $out['request_oauth'];
-            if (isset($oauth['access_token']) && isset($oauth['expires_in']) && $authType) {
+            if (isset($oauth['access_token']) && isset($oauth['expires_in']) && $appAuth) {
                 if ($token != $oauth['access_token']) {
-                    $this->storeAuthCache($authType, $oauth['access_token'], $oauth['expires_in']);
+                    $this->storeAuthCache('app', $oauth['access_token'], $oauth['expires_in']);
                 }
             }
 
@@ -153,16 +153,16 @@ class ZuggrCloud
      * Makes POST request to Zuggr Cloud and returns the result
      *
      * @param string $uri
+     * @param bool $appAuth
      * @param array $data
      * @param array $headers
-     * @param string $authType
      * @return array
      */
     public function post(
         string $uri,
+        bool $appAuth = true,
         array $data = [],
         array $headers = [],
-        string $authType = null,
         bool $returnRequestOauth = false
     ): array {
         if ($this->mock) {
@@ -171,8 +171,8 @@ class ZuggrCloud
 
         $token = null;
 
-        if ($authType) {
-            $token = $this->getTokenByAuth($authType);
+        if ($appAuth) {
+            $token = $this->getTokenByAuth('app');
             $headers = array_merge($headers, ['Authorization' => 'Bearer '.$token]);
         }
 
@@ -180,9 +180,9 @@ class ZuggrCloud
 
         if (isset($out['request_oauth'])) {
             $oauth = $out['request_oauth'];
-            if (isset($oauth['access_token']) && isset($oauth['expires_in']) && $authType) {
+            if (isset($oauth['access_token']) && isset($oauth['expires_in']) && $appAuth) {
                 if ($token != $oauth['access_token']) {
-                    $this->storeAuthCache($authType, $oauth['access_token'], $oauth['expires_in']);
+                    $this->storeAuthCache('app', $oauth['access_token'], $oauth['expires_in']);
                 }
             }
 
@@ -198,16 +198,16 @@ class ZuggrCloud
      * Makes PUT request to Zuggr Cloud and returns the result
      *
      * @param string $uri
+     * @param bool $appAuth
      * @param array $data
      * @param array $headers
-     * @param string $authType
      * @return array
      */
     public function put(
         string $uri,
+        bool $appAuth = true,
         array $data = [],
         array $headers = [],
-        string $authType = null,
         bool $returnRequestOauth = false
     ): array {
         if ($this->mock) {
@@ -216,8 +216,8 @@ class ZuggrCloud
 
         $token = null;
 
-        if ($authType) {
-            $token = $this->getTokenByAuth($authType);
+        if ($appAuth) {
+            $token = $this->getTokenByAuth('app');
             $headers = array_merge($headers, ['Authorization' => 'Bearer '.$token]);
         }
 
@@ -225,9 +225,9 @@ class ZuggrCloud
 
         if (isset($out['request_oauth'])) {
             $oauth = $out['request_oauth'];
-            if (isset($oauth['access_token']) && isset($oauth['expires_in']) && $authType) {
+            if (isset($oauth['access_token']) && isset($oauth['expires_in']) && $appAuth) {
                 if ($token != $oauth['access_token']) {
-                    $this->storeAuthCache($authType, $oauth['access_token'], $oauth['expires_in']);
+                    $this->storeAuthCache('app', $oauth['access_token'], $oauth['expires_in']);
                 }
             }
 
@@ -243,16 +243,16 @@ class ZuggrCloud
      * Makes DELETE request to Zuggr Cloud and returns the result
      *
      * @param string $uri
+     * @param bool $appAuth
      * @param array $data
      * @param array $headers
-     * @param string $authType
      * @return array
      */
     public function delete(
         string $uri,
+        bool $appAuth = true,
         array $data = [],
         array $headers = [],
-        string $authType = null,
         bool $returnRequestOauth = false
     ): array {
         if ($this->mock) {
@@ -261,8 +261,8 @@ class ZuggrCloud
 
         $token = null;
 
-        if ($authType) {
-            $token = $this->getTokenByAuth($authType);
+        if ($appAuth) {
+            $token = $this->getTokenByAuth('app');
             $headers = array_merge($headers, ['Authorization' => 'Bearer '.$token]);
         }
 
@@ -270,9 +270,9 @@ class ZuggrCloud
 
         if (isset($out['request_oauth'])) {
             $oauth = $out['request_oauth'];
-            if (isset($oauth['access_token']) && isset($oauth['expires_in']) && $authType) {
+            if (isset($oauth['access_token']) && isset($oauth['expires_in']) && $appAuth) {
                 if ($token != $oauth['access_token']) {
-                    $this->storeAuthCache($authType, $oauth['access_token'], $oauth['expires_in']);
+                    $this->storeAuthCache('app', $oauth['access_token'], $oauth['expires_in']);
                 }
             }
 

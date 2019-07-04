@@ -38,16 +38,16 @@ $zuggr = new ZuggrCloud\ZuggrCloud($cache, $config, false);
  * Makes request to Zuggr Cloud and returns the result
  *
  * @param string $uri
+ * @param bool $appAuth
  * @param array $data
  * @param array $headers
- * @param string $authType
  * @param bool $returnRequestOauth
  * @return array
  */
 
 // for safety reasons, request_oauth will not be returned by default
 
-$zuggr->get('app/oauth/info', [], [], 'app'); // app token auto-magically appears in request header when $authType = app
+$zuggr->get('app/oauth/info', true, [], []); // app token auto-magically appears in request header when $appAuth = true
 
 $adminOauth = $zuggr->post('admin/oauth/login', [
     'username' => 'foo',
