@@ -108,16 +108,16 @@ class ZuggrCloud
      * Makes GET request to Zuggr Cloud and returns the result
      *
      * @param string $uri
-     * @param bool $appAuth
      * @param array $data
      * @param array $headers
+     * @param bool $appAuth
      * @return array
      */
     public function get(
         string $uri,
-        bool $appAuth = true,
         array $data = [],
         array $headers = [],
+        bool $appAuth = true,
         bool $returnRequestOauth = false
     ): array {
         if ($this->mock) {
@@ -126,7 +126,7 @@ class ZuggrCloud
 
         $token = null;
 
-        if ($appAuth) {
+        if ($appAuth && !isset($data['token']) && !isset($headers['Authorization'])) {
             $token = $this->getTokenByAuth('app');
             $headers = array_merge($headers, ['Authorization' => 'Bearer '.$token]);
         }
@@ -153,16 +153,16 @@ class ZuggrCloud
      * Makes POST request to Zuggr Cloud and returns the result
      *
      * @param string $uri
-     * @param bool $appAuth
      * @param array $data
      * @param array $headers
+     * @param bool $appAuth
      * @return array
      */
     public function post(
         string $uri,
-        bool $appAuth = true,
         array $data = [],
         array $headers = [],
+        bool $appAuth = true,
         bool $returnRequestOauth = false
     ): array {
         if ($this->mock) {
@@ -171,7 +171,7 @@ class ZuggrCloud
 
         $token = null;
 
-        if ($appAuth) {
+        if ($appAuth && !isset($data['token']) && !isset($headers['Authorization'])) {
             $token = $this->getTokenByAuth('app');
             $headers = array_merge($headers, ['Authorization' => 'Bearer '.$token]);
         }
@@ -198,16 +198,16 @@ class ZuggrCloud
      * Makes PUT request to Zuggr Cloud and returns the result
      *
      * @param string $uri
-     * @param bool $appAuth
      * @param array $data
      * @param array $headers
+     * @param bool $appAuth
      * @return array
      */
     public function put(
         string $uri,
-        bool $appAuth = true,
         array $data = [],
         array $headers = [],
+        bool $appAuth = true,
         bool $returnRequestOauth = false
     ): array {
         if ($this->mock) {
@@ -216,7 +216,7 @@ class ZuggrCloud
 
         $token = null;
 
-        if ($appAuth) {
+        if ($appAuth && !isset($data['token']) && !isset($headers['Authorization'])) {
             $token = $this->getTokenByAuth('app');
             $headers = array_merge($headers, ['Authorization' => 'Bearer '.$token]);
         }
@@ -243,16 +243,16 @@ class ZuggrCloud
      * Makes DELETE request to Zuggr Cloud and returns the result
      *
      * @param string $uri
-     * @param bool $appAuth
      * @param array $data
      * @param array $headers
+     * @param bool $appAuth
      * @return array
      */
     public function delete(
         string $uri,
-        bool $appAuth = true,
         array $data = [],
         array $headers = [],
+        bool $appAuth = true,
         bool $returnRequestOauth = false
     ): array {
         if ($this->mock) {
@@ -261,7 +261,7 @@ class ZuggrCloud
 
         $token = null;
 
-        if ($appAuth) {
+        if ($appAuth && !isset($data['token']) && !isset($headers['Authorization'])) {
             $token = $this->getTokenByAuth('app');
             $headers = array_merge($headers, ['Authorization' => 'Bearer '.$token]);
         }
