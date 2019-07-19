@@ -18,6 +18,6 @@ class Helpers
         } elseif ($uri[0] != '/' && $withSlash) {
             $uri = '/'.$uri;
         }
-        return $uri;
+        return rtrim($uri, '/');
     }
 }

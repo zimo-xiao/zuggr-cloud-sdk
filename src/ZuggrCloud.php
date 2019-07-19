@@ -49,6 +49,16 @@ class ZuggrCloud
     protected $mock;
 
     /**
+     * @var bool
+     */
+    protected $useCaChe;
+
+    /**
+     * @var simpleDispatcher
+     */
+    protected $cacheRouteDispatcher;
+
+    /**
      * Instantiates a new ZuggrCloud super-class object.
      *
      * @param CacheInterface $cache
@@ -97,6 +107,60 @@ class ZuggrCloud
             $this->client = new ZuggrCloudClient();
         }
 
+        if (isset($config['cache'])) {
+            if (is_bool($config['cache'])) {
+                $this->useCaChe = $config['cache'];
+            } else {
+                throw new ZuggrCloudException('"cache" key must be type bool');
+            }
+        } else {
+            $this->useCaChe = true;
+        }
+
+        if ($this->useCaChe) {
+            $cacheRouteList = [
+                'rules' => [
+                    'admin/{id}' => ['GET', 'PUT', 'DELETE'],
+                    'app/{id}' => ['GET', 'PUT', 'DELETE'],
+                    'resource/passport/{id}' => ['GET', 'PUT', 'DELETE']
+                ],
+                'allies' => [
+                    'admin/{id}' => [
+                        'admin/{id}/credentials' => ['PUT']
+                    ],
+                    'app/{id}' => [
+                        'app/{id}/credentials' => ['PUT']
+                    ],
+                    'resource/passport/{id}' => [
+                        'resource/passport/{id}/credentials' => ['PUT'],
+                        'resource/passport/{id}/forget' => ['DELETE']
+                    ]
+                ]
+            ];
+
+            if (isset($config['cache_route_list'])) {
+                if (is_array($config['cache_route_list'])) {
+                    $this->cacheRouteList = $config['cache_route_list'];
+                } else {
+                    throw new ZuggrCloudException('"cache_route_list" key must be type array');
+                }
+            }
+
+            $this->cacheRouteDispatcher = \FastRoute\simpleDispatcher(
+                function (\FastRoute\RouteCollector $route) use ($cacheRouteList) {
+                    foreach ($cacheRouteList['rules'] as $routeRule => $requests) {
+                        $route->addRoute($requests, $routeRule, '#');
+                    }
+
+                    foreach ($cacheRouteList['allies'] as $orgRoute => $allies) {
+                        foreach ($allies as $routeRule => $requests) {
+                            $route->addRoute($requests, $routeRule, str_replace($orgRoute, '', $routeRule));
+                        }
+                    }
+                }
+            );
+        }
+
         if ($mock) {
             $this->request();
         }
@@ -120,8 +184,17 @@ class ZuggrCloud
         bool $appAuth = true,
         bool $returnRequestOauth = false
     ): array {
+        $uri = Helpers::parseURI($uri, false);
+
         if ($this->mock) {
-            return $this->getMockData('GET', Helpers::parseURI($uri, false));
+            return $this->getMockData('GET', $uri);
+        }
+
+        if ($this->useCaChe) {
+            $key = md5(__CLASS__ . ':route:'.Helpers::parseURI($uri));
+            if ($this->cache->has($key)) {
+                return json_decode($this->cache->get($key), true);
+            }
         }
 
         $token = null;
@@ -146,6 +219,10 @@ class ZuggrCloud
             }
         }
 
+        if ($this->useCaChe) {
+            $this->routeCacheManager('GET', $uri, $out);
+        }
+
         return $out;
     }
 
@@ -165,8 +242,10 @@ class ZuggrCloud
         bool $appAuth = true,
         bool $returnRequestOauth = false
     ): array {
+        $uri = Helpers::parseURI($uri, false);
+
         if ($this->mock) {
-            return $this->getMockData('POST', Helpers::parseURI($uri, false));
+            return $this->getMockData('POST', $uri);
         }
 
         $token = null;
@@ -191,6 +270,10 @@ class ZuggrCloud
             }
         }
 
+        if ($this->useCaChe) {
+            $this->routeCacheManager('POST', $uri, $out);
+        }
+
         return $out;
     }
 
@@ -210,8 +293,10 @@ class ZuggrCloud
         bool $appAuth = true,
         bool $returnRequestOauth = false
     ): array {
+        $uri = Helpers::parseURI($uri, false);
+
         if ($this->mock) {
-            return $this->getMockData('PUT', Helpers::parseURI($uri, false));
+            return $this->getMockData('PUT', $uri);
         }
 
         $token = null;
@@ -236,6 +321,10 @@ class ZuggrCloud
             }
         }
 
+        if ($this->useCaChe) {
+            $this->routeCacheManager('PUT', $uri, $out);
+        }
+
         return $out;
     }
 
@@ -255,8 +344,10 @@ class ZuggrCloud
         bool $appAuth = true,
         bool $returnRequestOauth = false
     ): array {
+        $uri = Helpers::parseURI($uri, false);
+
         if ($this->mock) {
-            return $this->getMockData('DELETE', Helpers::parseURI($uri, false));
+            return $this->getMockData('DELETE', $uri);
         }
 
         $token = null;
@@ -279,6 +370,10 @@ class ZuggrCloud
             if (!$returnRequestOauth) {
                 unset($out['request_oauth']);
             }
+        }
+
+        if ($this->useCaChe) {
+            $this->routeCacheManager('DELETE', $uri, $out);
         }
 
         return $out;
@@ -346,6 +441,36 @@ class ZuggrCloud
         $key = md5(__CLASS__ . ':auth:'.$authType);
 
         $this->cache->set($key, $token, $expiresIn - 60);
+    }
+
+    private function routeCacheManager(string $request, string $uri, &$data)
+    {
+        $routeInfo = $this->cacheRouteDispatcher->dispatch($request, $uri);
+        if ($routeInfo[0] == 1) {
+            if ($routeInfo[1] != '#') {
+                $uri = str_replace($routeInfo[1], '', $uri);
+            }
+
+            $key = md5(__CLASS__ . ':route:'.Helpers::parseURI($uri));
+            $d = json_encode($data);
+
+            switch ($request) {
+                case 'GET':
+                    $this->cache->set($key, $d, 10 * 60);
+                    break;
+                case 'PUT':
+                    $this->cache->delete($key);
+                    $this->cache->set($key, $d, 10 * 60);
+                    break;
+                case 'POST':
+                    $this->cache->delete($key);
+                    $this->cache->set($key, $d, 10 * 60);
+                    break;
+                case 'DELETE':
+                    $this->cache->delete($key);
+                    break;
+            }
+        }
     }
 
     /**
