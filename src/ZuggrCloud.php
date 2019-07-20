@@ -175,6 +175,7 @@ class ZuggrCloud
      * @param array $data
      * @param array $headers
      * @param bool $appAuth
+     * @param bool $returnRequestOauth
      * @return array
      */
     public function get(
@@ -233,6 +234,7 @@ class ZuggrCloud
      * @param array $data
      * @param array $headers
      * @param bool $appAuth
+     * @param bool $returnRequestOauth
      * @return array
      */
     public function post(
@@ -284,6 +286,7 @@ class ZuggrCloud
      * @param array $data
      * @param array $headers
      * @param bool $appAuth
+     * @param bool $returnRequestOauth
      * @return array
      */
     public function put(
@@ -335,6 +338,7 @@ class ZuggrCloud
      * @param array $data
      * @param array $headers
      * @param bool $appAuth
+     * @param bool $returnRequestOauth
      * @return array
      */
     public function delete(
