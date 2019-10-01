@@ -192,7 +192,7 @@ class ZuggrCloud
         }
 
         if ($this->useCaChe) {
-            $key = md5(__CLASS__ . ':route:'.Helpers::parseURI($uri));
+            $key = md5(__CLASS__ . ':route:'.$uri);
             if ($this->cache->has($key)) {
                 return json_decode($this->cache->get($key), true);
             }
@@ -201,11 +201,15 @@ class ZuggrCloud
         $token = null;
 
         if ($appAuth && !isset($data['token']) && !isset($headers['Authorization'])) {
-            $token = $this->getTokenByAuth('app');
+            $token = $this->getAppToken();
             $headers = array_merge($headers, ['Authorization' => 'Bearer '.$token]);
         }
 
-        $out = $this->request('GET', $uri, $data, $headers);
+        try {
+            $out = $this->request('GET', $uri, $data, $headers);
+        } catch (\Exception $e) {
+            $out = $this->requestAgainAfterTokenRefresh($e, 'GET', $token, $uri, $data, $headers);
+        }
 
         if (isset($out['request_oauth'])) {
             $oauth = $out['request_oauth'];
@@ -253,11 +257,15 @@ class ZuggrCloud
         $token = null;
 
         if ($appAuth && !isset($data['token']) && !isset($headers['Authorization'])) {
-            $token = $this->getTokenByAuth('app');
+            $token = $this->getAppToken();
             $headers = array_merge($headers, ['Authorization' => 'Bearer '.$token]);
         }
 
-        $out = $this->request('POST', $uri, $data, $headers);
+        try {
+            $out = $this->request('POST', $uri, $data, $headers);
+        } catch (\Exception $e) {
+            $out = $this->requestAgainAfterTokenRefresh($e, 'POST', $token, $uri, $data, $headers);
+        }
 
         if (isset($out['request_oauth'])) {
             $oauth = $out['request_oauth'];
@@ -305,11 +313,15 @@ class ZuggrCloud
         $token = null;
 
         if ($appAuth && !isset($data['token']) && !isset($headers['Authorization'])) {
-            $token = $this->getTokenByAuth('app');
+            $token = $this->getAppToken();
             $headers = array_merge($headers, ['Authorization' => 'Bearer '.$token]);
         }
 
-        $out = $this->request('PUT', $uri, $data, $headers);
+        try {
+            $out = $this->request('PUT', $uri, $data, $headers);
+        } catch (\Exception $e) {
+            $out = $this->requestAgainAfterTokenRefresh($e, 'PUT', $token, $uri, $data, $headers);
+        }
 
         if (isset($out['request_oauth'])) {
             $oauth = $out['request_oauth'];
@@ -357,11 +369,15 @@ class ZuggrCloud
         $token = null;
 
         if ($appAuth && !isset($data['token']) && !isset($headers['Authorization'])) {
-            $token = $this->getTokenByAuth('app');
+            $token = $this->getAppToken();
             $headers = array_merge($headers, ['Authorization' => 'Bearer '.$token]);
         }
 
-        $out = $this->request('DELETE', $uri, $data, $headers);
+        try {
+            $out = $this->request('DELETE', $uri, $data, $headers);
+        } catch (\Exception $e) {
+            $out = $this->requestAgainAfterTokenRefresh($e, 'DELETE', $token, $uri, $data, $headers);
+        }
 
         if (isset($out['request_oauth'])) {
             $oauth = $out['request_oauth'];
@@ -386,25 +402,6 @@ class ZuggrCloud
     /** helper functions **/
 
     /**
-     * Get token by auth type
-     *
-     * @param string $auth
-     * @param string $bizID
-     * @return string
-     */
-    private function getTokenByAuth(string $authType): string
-    {
-        switch ($authType) {
-            case 'app':
-                return $this->getAppToken();
-                break;
-            
-            default:
-                return null;
-        }
-    }
-
-    /**
      * Get app token from cache, refresh if expired
      *
      * @return string
@@ -414,21 +411,31 @@ class ZuggrCloud
         $key = md5(__CLASS__ . ':auth:app');
 
         if (!$out = $this->cache->get($key)) {
-            $out = $this->request('POST', $this->appAuthURI, [
-                'credential_id' => $this->appID,
-                'secret' => $this->appSecret
-            ]);
-
-            if (!isset($out['access_token']) || !isset($out['expires_in'])) {
-                throw new ZuggrCloudException('failed to fetch app token from Zuggr Cloud');
-            }
-
-            $this->cache->set($key, $out['access_token'], $out['expires_in'] - 60);
-            
-            return $out['access_token'];
+            return $this->refreshAppToken();
         }
 
         return $out;
+    }
+
+    /**
+     * Refresh app token
+     *
+     * @return string
+     */
+    private function refreshAppToken(): string
+    {
+        $out = $this->request('POST', $this->appAuthURI, [
+            'credential_id' => $this->appID,
+            'secret' => $this->appSecret
+        ]);
+
+        if (!isset($out['access_token']) || !isset($out['expires_in'])) {
+            throw new ZuggrCloudException('failed to fetch app token from Zuggr Cloud');
+        }
+
+        $this->storeAuthCache('app', $out['access_token'], $out['expires_in']);
+            
+        return $out['access_token'];
     }
 
     /**
@@ -545,5 +552,20 @@ class ZuggrCloud
         $out = json_decode($response->getBody(), true);
         
         return is_array($out) ? $out : [];
+    }
+
+    private function requestAgainAfterTokenRefresh($e, $method, &$token, &$uri, &$data, &$headers)
+    {
+        if ($token != null) {
+            $code = $e->getResponse()->getStatusCode();
+            if (((int)$code) == 422) {
+                $this->refreshAppToken();
+                return $this->request($method, $uri, $data, $headers);
+            } else {
+                throw $e;
+            }
+        } else {
+            throw $e;
+        }
     }
 }
