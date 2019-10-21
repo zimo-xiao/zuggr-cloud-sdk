@@ -26,7 +26,7 @@ class ZuggrCloudClient extends \GuzzleHttp\Client
         }
 
         if (!isset($config['baseURL'])) {
-            $config['baseURL'] = 'cloud.zuggr.com';
+            $config['baseURL'] = 'cloud.api.zuggr.com';
         }
 
         if (!isset($config['https'])) {
